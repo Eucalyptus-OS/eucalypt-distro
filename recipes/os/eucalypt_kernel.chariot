@@ -1,0 +1,31 @@
+// eucalypt
+
+source/eucalypt_kernel {
+    url: "https://github.com/Eucalyptus-OS/Eucalypt-Kernel.git"
+    type: "git"
+    revision: "main"
+    dependencies: [
+        source/gcc_bootstrap,
+        package/mlibc_headers
+    ]
+
+}
+
+package/eucalypt_kernel {
+    dependencies: [ 
+        source/eucalypt_kernel, package/eucalypt_userland, 
+        tool/pkgconf, tool/block, image/meson, image/build-essential, image/rsync 
+    ]
+
+    build: <sh>
+        
+    </sh>
+
+    install: <sh>
+        block --file build.block --debug --target iso --var ARCHIVE=$INSTALL_DIR/main_archive.tar
+        ls $SOURCES_DIR/eucalypt_kernel/
+        cp -r $SOURCES_DIR/eucalypt_kernel/eucalypt-x86_64.iso $INSTALL_DIR
+        cp -r $SOURCES_DIR/eucalypt_kernel/disks $INSTALL_DIR
+        cp -r $SOURCES_DIR/eucalypt_kernel/edk2-ovmf $INSTALL_DIR
+    </sh>
+}

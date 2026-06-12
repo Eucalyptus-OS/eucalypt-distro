@@ -1,0 +1,72 @@
+source/gcc_bootstrap {
+    url: "https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.gz"
+    b2sum: "05248887c7dba27ea7ad27d59079668b47b477fea1ee4844d37546c0152a66b2dc9ebf766493bccc2c12ad990e92623417007bdc4d82f8e7e97096f3f8e6dec6"
+    type: "tar.gz"
+    patch: "patches/gcc-host.diff"
+    dependencies: [
+        source/libtool
+        tool/pkgconf tool/reconfigure
+        collection/autotools_2.69
+        package/mlibc_headers
+    ]
+    regenerate: <sh>
+        ./contrib/download_prerequisites
+
+        rm -rf gettext*
+
+        reconfigure.sh -I"$(realpath ./config)"
+
+        cp -pv $SOURCES_DIR/libtool/build-aux/{config.sub,config.guess,install-sh} libiberty/
+        cp -pv $SOURCES_DIR/libtool/build-aux/{config.sub,config.guess,install-sh} libgcc/
+    </sh>
+}
+
+tool/gcc_bootstrap {
+    dependencies: [
+        %source/gcc_bootstrap
+        tool/autoconf_archive *tool/binutils tool/pkgconf
+        collection/autotools_2.69
+        ! *package/mlibc_headers image/build-essential
+    ]
+    configure: <sh>
+        CFLAGS="-O2" CXXFLAGS="-O2" $SOURCES_DIR/gcc_bootstrap/configure \
+            --target=x86_64-eucalypt \
+            --prefix=$PREFIX \
+            --with-sysroot=$SYSROOT_DIR \
+            --enable-languages=c,c++ \
+            --disable-nls \
+            --disable-multilib \
+            --disable-shared \
+            --disable-threads \
+            --disable-libssp \
+            --disable-libquadmath \
+            --disable-libatomic \
+            --enable-initfini-array \
+            --without-headers \
+            --with-newlib
+    </sh>
+    build: <sh>
+        export PATH="$PATH:/usr/bin/core_perl"
+        make -j$PARALLELISM all-gcc
+    </sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR make install-gcc
+    </sh>
+}
+
+tool/gcc_bootstrap_libgcc {
+    dependencies: [
+        %source/gcc_bootstrap
+        *tool/gcc_bootstrap *package/mlibc_headers
+        *tool/binutils tool/pkgconf
+        collection/autotools_2.69
+        image/build-essential
+    ]
+    build: <sh>
+        export PATH="$PATH:/usr/bin/core_perl"
+        make -j$PARALLELISM all-target-libgcc
+    </sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR make install-target-libgcc
+    </sh>
+}
