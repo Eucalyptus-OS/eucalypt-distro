@@ -1,0 +1,23 @@
+source/eucalypt_userland {
+    url: "https://github.com/Eucalyptus-OS/Eucalypt-Userland.git"
+    type: "git"
+    revision: "main"
+}
+
+package/eucalypt_userland {
+    dependencies: [ 
+        source/eucalypt_userland, 
+        tool/gcc_bootstrap,
+        tool/block 
+    ]
+    
+    build: <sh>
+        echo building eucalypt_userland
+        block --file build.block
+        ls $SOURCES_DIR/eucalypt_userland
+    </sh>
+
+    install: <sh>
+        install $SOURCES_DIR/eucalypt_userland/main_archive.tar $INSTALL_DIR
+    </sh>
+}

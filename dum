@@ -1,0 +1,94 @@
+// source/mlibc {
+//     url: "https://github.com/Eucalyptus-OS/mlibc.git"
+//     type: "git"
+//     revision: "main"
+// }
+
+// package/mlibc {
+//     dependencies: [
+//         %source/mlibc
+//         source/support
+//         tool/gcc_bootstrap
+//         image/g++
+//         tool/pkgconf
+//         package/mlibc_headers
+//         package/freestanding_c_headers
+//         package/freestanding_cxx_headers
+//         image/meson
+//         custom/linux_headers
+//     ]
+//     configure: <sh>
+//         meson setup \
+//             --cross-file $SOURCES_DIR/support/lunar.cross \
+//             --prefix=$PREFIX \
+//             --libdir=lib \
+//             --buildtype=debug \
+//             -Dno_headers=true \
+//             -Ddefault_library=both \
+//             -Dbuild_tests=false \
+//             -Dposix_option=enabled \
+//             -Dlinux_option=enabled \
+//             -Dglibc_option=enabled \
+//             -Dbsd_option=enabled \
+//             -Dlinux_kernel_headers=$CUSTOM_DIR/linux_headers/include \
+//             $SOURCES_DIR/mlibc
+//     </sh>
+//     build: <sh>ninja -j$PARALLELISM</sh>
+//     install: <sh>
+//         DESTDIR=$INSTALL_DIR ninja install
+//     </sh>
+// }
+
+// @collection mlibc_build = [ tool/binutils tool/gcc package/mlibc package/mlibc_headers ]
+
+// source/gcc {
+//     url: "https://mirror.elysium-os.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.gz"
+//     b2sum: "05248887c7dba27ea7ad27d59079668b47b477fea1ee4844d37546c0152a66b2dc9ebf766493bccc2c12ad990e92623417007bdc4d82f8e7e97096f3f8e6dec6"
+//     type: "tar.gz"
+//     patch: "patches/gcc-host.diff"
+//     dependencies: [
+//         source/libtool
+//         tool/pkgconf tool/reconfigure
+//         collection/autotools_2.69
+//     ]
+//     regenerate: <sh>
+//         ./contrib/download_prerequisites
+
+//         rm -rf gettext*
+
+//         reconfigure.sh -I"$(realpath ./config)"
+
+//         cp -pv $SOURCES_DIR/libtool/build-aux/{config.sub,config.guess,install-sh} libiberty/
+//         cp -pv $SOURCES_DIR/libtool/build-aux/{config.sub,config.guess,install-sh} libgcc/
+//     </sh>
+// }
+
+// tool/gcc {
+//     dependencies: [
+//         %source/gcc
+//         tool/autoconf_archive *tool/binutils tool/pkgconf
+//         collection/autotools_2.69
+//         !*package/mlibc_headers !*package/mlibc image/build-essential
+//     ]
+//     configure: <sh>
+//         CFLAGS="-O2" CXXFLAGS="-O2" $SOURCES_DIR/gcc/configure \
+//             --target=x86_64-eucalypt \
+//             --prefix=$PREFIX \
+//             --with-sysroot=$SYSROOT_DIR \
+//             --enable-languages=c,c++ \
+//             --disable-nls \
+//             --disable-multilib \
+//             --enable-initfini-array
+//     </sh>
+//     build: <sh>
+//         export PATH="$PATH:/usr/bin/core_perl"
+//         make -j$PARALLELISM all-gcc
+//         make -j$PARALLELISM all-target-libgcc
+//         make -j$PARALLELISM all-target-libstdc++-v3
+//     </sh>
+//     install: <sh>
+//         DESTDIR=$INSTALL_DIR make install-gcc
+//         DESTDIR=$INSTALL_DIR make install-target-libgcc
+//         DESTDIR=$INSTALL_DIR make install-target-libstdc++-v3
+//     </sh>
+// }

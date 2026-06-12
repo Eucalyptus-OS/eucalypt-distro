@@ -1,0 +1,51 @@
+source/mlibc_headers {
+    url: "https://github.com/Eucalyptus-OS/mlibc.git"
+    type: "git"
+    revision: "master"
+}
+
+source/mlibc {
+    url: "https://github.com/Eucalyptus-OS/mlibc.git"
+    type: "git"
+    revision: "master"
+}
+
+package/mlibc_headers {
+    dependencies: [ source/mlibc_headers tool/pkgconf image/meson image/build-essential image/rsync ]
+    configure: <sh>
+        meson setup \
+            --cross-file $SOURCES_DIR/mlibc_headers/crossfile \
+            --prefix=$PREFIX \
+            --buildtype=release \
+            -Dheaders_only=true \
+            -Dposix_option=disabled \
+            -Dlinux_option=disabled \
+            -Dglibc_option=disabled \
+            -Dbsd_option=disabled \
+            $SOURCES_DIR/mlibc_headers
+    </sh>
+    build: <sh>ninja -j$PARALLELISM</sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR ninja install
+    </sh>
+}
+
+package/mlibc {
+    dependencies: [ source/mlibc, tool/gcc_bootstrap, tool/pkgconf image/meson image/build-essential image/rsync ]
+    configure: <sh>
+        meson setup \
+            --cross-file $SOURCES_DIR/mlibc/crossfile \
+            --prefix=$PREFIX \
+            --buildtype=release \
+            -Dheaders_only=true \
+            -Dposix_option=disabled \
+            -Dlinux_option=disabled \
+            -Dglibc_option=disabled \
+            -Dbsd_option=disabled \
+            $SOURCES_DIR/mlibc
+    </sh>
+    build: <sh>ninja -j$PARALLELISM</sh>
+    install: <sh>
+        DESTDIR=$INSTALL_DIR ninja install
+    </sh>
+}

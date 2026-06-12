@@ -1,0 +1,17 @@
+source/block {
+    url: "https://github.com/Eucalyptus-OS/Block.git"
+    type: "git"
+    revision: "main"
+}
+
+tool/block {
+    dependencies: [ source/block image/cargo ]
+    build: <sh>
+        cd $SOURCES_DIR/block
+        cargo build --release  --target-dir $BUILD_DIR
+    </sh>
+
+    install: <sh>
+        install -D release/block $INSTALL_DIR$PREFIX/bin/block
+    </sh>
+}
