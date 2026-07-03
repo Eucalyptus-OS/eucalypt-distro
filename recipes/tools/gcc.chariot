@@ -7,7 +7,6 @@ source/gcc_bootstrap {
         source/libtool
         tool/pkgconf tool/reconfigure
         collection/autotools_2.69
-        package/mlibc_headers
     ]
     regenerate: <sh>
         ./contrib/download_prerequisites
@@ -21,12 +20,24 @@ source/gcc_bootstrap {
     </sh>
 }
 
+source/gcc_stage2_src {
+    url: "https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.gz"
+    type: "tar.gz"
+    b2sum: "05248887c7dba27ea7ad27d59079668b47b477fea1ee4844d37546c0152a66b2dc9ebf766493bccc2c12ad990e92623417007bdc4d82f8e7e97096f3f8e6dec6"
+}
+
+source/tcc {
+    url: "https://github.com/Eucalyptus-OS/eucalypt-tinycc.git"
+    type: "git"
+    revision: "mob"
+}
+
 tool/gcc_bootstrap {
     dependencies: [
         %source/gcc_bootstrap
         tool/autoconf_archive *tool/binutils tool/pkgconf
         collection/autotools_2.69
-        ! *package/mlibc_headers image/build-essential
+        !*package/mlibc_headers image/build-essential
     ]
     configure: <sh>
         CFLAGS="-O2" CXXFLAGS="-O2" $SOURCES_DIR/gcc_bootstrap/configure \
@@ -37,36 +48,102 @@ tool/gcc_bootstrap {
             --disable-nls \
             --disable-multilib \
             --disable-shared \
-            --disable-threads \
-            --disable-libssp \
-            --disable-libquadmath \
-            --disable-libatomic \
             --enable-initfini-array \
             --without-headers \
-            --with-newlib
+            --without-newlib
     </sh>
     build: <sh>
         export PATH="$PATH:/usr/bin/core_perl"
         make -j$PARALLELISM all-gcc
-    </sh>
-    install: <sh>
-        DESTDIR=$INSTALL_DIR make install-gcc
-    </sh>
-}
-
-tool/gcc_bootstrap_libgcc {
-    dependencies: [
-        %source/gcc_bootstrap
-        *tool/gcc_bootstrap *package/mlibc_headers
-        *tool/binutils tool/pkgconf
-        collection/autotools_2.69
-        image/build-essential
-    ]
-    build: <sh>
-        export PATH="$PATH:/usr/bin/core_perl"
         make -j$PARALLELISM all-target-libgcc
     </sh>
     install: <sh>
+        DESTDIR=$INSTALL_DIR make install-gcc
         DESTDIR=$INSTALL_DIR make install-target-libgcc
+    </sh>
+}
+
+tool/gcc_stage2 {
+    dependencies: [
+        %source/gcc_stage2_src
+        tool/binutils
+        tool/pkgconf
+        collection/autotools_2.69
+        *package/mlibc_headers
+        tool/gcc_bootstrap
+    ]
+
+    configure: <sh>
+        export PATH="$PREFIX/bin:$PATH"
+
+        export CC="x86_64-eucalypt-gcc"
+        export CXX="x86_64-eucalypt-g++"
+        export AR="x86_64-eucalypt-ar"
+        export AS="x86_64-eucalypt-as"
+        export LD="x86_64-eucalypt-ld"
+
+        $SOURCES_DIR/gcc_stage2_src/configure \
+            --target=x86_64-eucalypt \
+            --prefix=$PREFIX \
+            --with-sysroot=$SYSROOT_DIR \
+            --with-build-sysroot=$SYSROOT_DIR \
+            --enable-languages=c,c++ \
+            --disable-nls \
+            --disable-multilib \
+            --disable-shared \
+            --disable-bootstrap \
+            --enable-threads=single \
+            --with-gthr=single \
+            --disable-libstdcxx-pch \
+            --disable-libstdcxx-dual-abi \
+            --enable-__cxa_atexit \
+            --enable-initfini-array \
+            --enable-linker-build-id \
+            --enable-libstdcxx-time \
+            --enable-libstdcxx-threads \
+            --no-sysroot-suffix
+    </sh>
+
+    build: <sh>
+        export PATH="$PREFIX/bin:$PATH"
+
+        make -j$PARALLELISM \
+            all-gcc \
+            all-target-libgcc \
+            all-target-libstdc++-v3
+    </sh>
+
+    install: <sh>
+        make install-gcc install-target-libgcc install-target-libstdc++-v3
+    </sh>
+}
+
+package/tcc {
+    dependencies: [
+        %source/tcc
+        *tool/binutils
+        *package/mlibc_headers
+        tool/gcc_stage2
+    ]
+
+    configure: <sh>
+        export PATH="$PREFIX/bin:$PATH"
+
+        CC=x86_64-eucalypt-gcc \
+        AR=x86_64-eucalypt-ar \
+        $SOURCES_DIR/tcc/configure \
+            --enable-cross \
+            --cpu=x86_64 \
+            --targetos=Eucalypt \
+            --sysroot=$SYSROOT_DIR \
+            --prefix=$PREFIX
+    </sh>
+
+    build: <sh>
+        make -j$PARALLELISM
+    </sh>
+
+    install: <sh>
+        make DESTDIR=$INSTALL_DIR install
     </sh>
 }

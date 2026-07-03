@@ -11,40 +11,53 @@ source/mlibc {
 }
 
 package/mlibc_headers {
-    dependencies: [ source/mlibc_headers tool/pkgconf image/meson image/build-essential image/rsync ]
+    dependencies: [
+        source/mlibc_headers
+        tool/pkgconf
+        image/meson
+        image/build-essential
+    ]
+
     configure: <sh>
         meson setup \
             --cross-file $SOURCES_DIR/mlibc_headers/crossfile \
-            --prefix=$PREFIX \
+            --prefix=/usr \
             --buildtype=release \
             -Dheaders_only=true \
-            -Dposix_option=disabled \
-            -Dlinux_option=disabled \
-            -Dglibc_option=disabled \
-            -Dbsd_option=disabled \
             $SOURCES_DIR/mlibc_headers
     </sh>
-    build: <sh>ninja -j$PARALLELISM</sh>
+
+    build: <sh>
+        ninja -j$PARALLELISM
+    </sh>
+
     install: <sh>
         DESTDIR=$INSTALL_DIR ninja install
     </sh>
 }
 
 package/mlibc {
-    dependencies: [ source/mlibc, tool/gcc_bootstrap, tool/pkgconf image/meson image/build-essential image/rsync ]
+    dependencies: [
+        source/mlibc
+        tool/gcc_bootstrap
+        tool/binutils
+        package/mlibc_headers
+        image/meson
+        image/build-essential
+    ]
+
     configure: <sh>
         meson setup \
             --cross-file $SOURCES_DIR/mlibc/crossfile \
-            --prefix=$PREFIX \
+            --prefix=/usr \
             --buildtype=release \
-            -Dheaders_only=true \
-            -Dposix_option=disabled \
-            -Dlinux_option=disabled \
-            -Dglibc_option=disabled \
-            -Dbsd_option=disabled \
             $SOURCES_DIR/mlibc
     </sh>
-    build: <sh>ninja -j$PARALLELISM</sh>
+
+    build: <sh>
+        ninja -j$PARALLELISM
+    </sh>
+
     install: <sh>
         DESTDIR=$INSTALL_DIR ninja install
     </sh>

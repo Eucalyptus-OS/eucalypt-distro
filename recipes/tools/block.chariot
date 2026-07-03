@@ -8,7 +8,7 @@ tool/block {
     dependencies: [ source/block image/cargo ]
     build: <sh>
         cd $SOURCES_DIR/block
-        cargo build --release  --target-dir $BUILD_DIR
+        cargo build --release --target-dir $BUILD_DIR
     </sh>
 
     install: <sh>

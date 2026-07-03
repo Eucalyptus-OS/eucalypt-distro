@@ -75,6 +75,7 @@ def run_qemu():
 
 
 def main():
+    run_command(["chariot", "build", "package/eucalypt_userland"])
     run_command(["chariot", "wipe", "recipe", "package/eucalypt_kernel"])
     run_command(["chariot", "build", "package/eucalypt_kernel"])
     try:
