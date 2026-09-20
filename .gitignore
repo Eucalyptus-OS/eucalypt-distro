@@ -1,1 +1,4 @@
-.chariot-*
+/mlibc
+/kernel
+/tools
+/build

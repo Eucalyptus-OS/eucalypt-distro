@@ -1,0 +1,13 @@
+[submodule "Eucalypt-Kernel"]
+	path = Eucalypt-Kernel
+	url = https://github.com/Eucalyptus-OS/Eucalypt-Kernel
+	branch = Redo-Cause-Im-A-Chud
+[submodule "eucalypt-userland"]
+	path = eucalypt-userland
+	url = https://github.com/Eucalyptus-OS/eucalypt-userland
+[submodule "eucalypt-mlibc"]
+	path = eucalypt-mlibc
+	url = https://github.com/Eucalyptus-OS/eucalypt-mlibc
+[submodule "tools"]
+	path = tools
+	url = https://github.com/Eucalyptus-OS/tools
