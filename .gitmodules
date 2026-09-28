@@ -11,3 +11,6 @@
 [submodule "tools"]
 	path = tools
 	url = https://github.com/Eucalyptus-OS/tools
+[submodule "eucalypt-desktop"]
+	path = eucalypt-desktop
+	url = https://github.com/Eucalyptus-OS/eucalypt-desktop

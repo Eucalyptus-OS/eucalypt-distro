@@ -35,6 +35,13 @@ USERLAND_DIR  := eucalypt-userland
 USERLAND_SRC  := $(USERLAND_DIR)/src
 USERLAND_BIN  := build/userland/bin
 
+# The desktop is a separate project with its own GNUmakefile and linker script,
+# so it is driven with $(MAKE) -C and handed our staged toolchain and mlibc.
+DESKTOP_DIR   := eucalypt-desktop
+DESKTOP_SRC   := $(DESKTOP_DIR)/src
+DESKTOP_BIN   := build/desktop
+DESKTOP_OUT   := $(DESKTOP_BIN)/desktop
+
 KERNEL_DIR   := Eucalypt-Kernel
 KERNEL_ARCH  := x86_64
 KERNEL_BIN   := $(KERNEL_DIR)/kernel/bin-$(KERNEL_ARCH)/kernel
@@ -62,15 +69,16 @@ LIBS := $(MLIBC_LIB)/libc.a $(MLIBC_LIB)/libssp_nonshared.a \
 USERLAND_SRCS := $(filter-out $(USERLAND_SRC)/dso_stub.c,$(wildcard $(USERLAND_SRC)/*.c))
 USERLAND_BINS := $(patsubst $(USERLAND_SRC)/%.c,$(USERLAND_BIN)/%,$(USERLAND_SRCS))
 
-.PHONY: all run sync update clean distclean tools mlibc userland kernel
+.PHONY: all run sync update clean distclean tools mlibc userland desktop kernel
 
 all: $(ISO)
 
 run: $(ISO) $(OVMF)
 	qemu-system-x86_64 \
-		-M q35 \
+		-M q35,i8042=on \
 		-drive if=pflash,unit=0,format=raw,file=$(OVMF),readonly=on \
 		-cdrom $(ISO) \
+		-display sdl \
 		-m 2G -d int -device isa-debugcon,chardev=debug \
 		-chardev stdio,id=debug
 
@@ -95,14 +103,25 @@ $(USERLAND_BIN)/%: $(USERLAND_SRC)/%.c $(USERLAND_SRC)/linker.ld $(MLIBC_LIB)/li
 	$(STRIP) --strip-debug $@
 	rm -f $@.o
 
+# ------- desktop ----------
+
+desktop: $(DESKTOP_OUT)
+
+$(DESKTOP_OUT): $(MLIBC_LIB)/libc.a $(wildcard $(DESKTOP_SRC)/*)
+	$(MAKE) -C $(DESKTOP_DIR) \
+		CROSS_PREFIX=$(CROSS_PREFIX) \
+		MLIBC=$(MLIBC_INSTALL) \
+		BINDIR=$(abspath $(DESKTOP_BIN))
+
 # ------- initramfs ----------
 
 # POSIX ustar archive (what kernel/src/fs/ustar.c parses) of the userland
 # binaries, served to the kernel as its first Limine module. The kernel
 # mounts it at /ram and execs /ram/bin/init.
-$(INITRAMFS): $(USERLAND_BINS)
+$(INITRAMFS): $(USERLAND_BINS) $(DESKTOP_OUT)
 	mkdir -p build/initramfs_root/bin
 	cp $(USERLAND_BINS) build/initramfs_root/bin/
+	cp $(DESKTOP_OUT) build/initramfs_root/bin/desktop
 	tar --format=ustar -C build/initramfs_root -cf $@ bin
 	rm -rf build/initramfs_root
 
